@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { MapPage } from "@/components/mapPage";
 import { getBarang, importBarang } from "@/services/barang";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "Dashboard",
+};
 
 export default async function Dashboard() {
   const dataBarang = await getBarang();

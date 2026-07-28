@@ -4,7 +4,8 @@ import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import markerIconPng from "leaflet/dist/images/marker-icon.png";
 import { Icon } from "leaflet";
 import { Barang } from "@/types/barang";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export type MapProps = {
   barang: Array<Barang>;
@@ -17,7 +18,10 @@ type positionType = {
 
 function SetViewOnClick({ latitude, longtitude }: positionType) {
   const map = useMap();
-  map.setView([latitude, longtitude], map.getZoom());
+  useEffect(() => {
+    map.closePopup();
+    map.flyTo([latitude, longtitude], 13);
+  }, [latitude, longtitude, map]);
 
   return null;
 }
@@ -36,42 +40,58 @@ export default function Map({ barang }: MapProps) {
     });
   };
 
+  const [search, setSearch] = useState<string>("");
+
+  const searchData = barang.filter((data) => {
+    return search
+      .toLowerCase()
+      .split(" ")
+      .filter(Boolean)
+      .every((datas) => data.nama.toLowerCase().includes(datas));
+  });
+
   return (
     <>
-      <MapContainer
-        key={"a"}
-        center={[position.latitude, position.longtitude]}
-        zoom={13}
-        scrollWheelZoom={false}
-        className="w-full h-96"
-      >
-        <SetViewOnClick
-          latitude={position.latitude}
-          longtitude={position.longtitude}
-        />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        <Marker
-          icon={
-            new Icon({
-              iconUrl: markerIconPng,
-              iconSize: [25, 41],
-              iconAnchor: [12, 41],
-            })
-          }
-          position={[-6.2088, 106.8456]}
+      <section className="relative">
+        <div className="absolute top-0 left-2/4 z-20 -translate-x-1/2 flex flex-col justify-center items-center">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            type="text"
+            className="w-52 px-2 h-12 bg-white rounded-md border border-gray-200"
+            placeholder="cari"
+          />
+          <br />
+          {search ? (
+            <div className="w-52 h-44 bg-white rounded-md shadow-md mt-12">
+              {searchData.map((data) => (
+                <div onClick={() => pindahPosisi(data)} key={data.id}>
+                  <h1 className="text-black">{data.nama}</h1>
+                  <hr />
+                </div>
+              ))}
+            </div>
+          ) : (
+            ""
+          )}
+        </div>
+        <MapContainer
+          key={"a"}
+          center={[position.latitude, position.longtitude]}
+          zoom={13}
+          scrollWheelZoom={false}
+          className="w-full h-96 z-10 "
         >
-          <Popup>
-            A pretty CSS3 popup. <br /> Easily customizable.
-          </Popup>
-        </Marker>
+          <SetViewOnClick
+            latitude={position.latitude}
+            longtitude={position.longtitude}
+          />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-        {barang.map((data) => (
           <Marker
-            key={data.nama}
             icon={
               new Icon({
                 iconUrl: markerIconPng,
@@ -79,16 +99,40 @@ export default function Map({ barang }: MapProps) {
                 iconAnchor: [12, 41],
               })
             }
-            position={[data.latitude, data.longtitude]}
+            position={[-6.2088, 106.8456]}
           >
             <Popup>
-              <h1>{data.nama}</h1>
-              <p>{data.deskripsi}</p>
-              <p>{data.lokasi}</p>
+              A pretty CSS3 popup. <br /> Easily customizable.
             </Popup>
           </Marker>
-        ))}
-      </MapContainer>
+
+          {barang.map((data) => (
+            <Marker
+              key={data.nama}
+              icon={
+                new Icon({
+                  iconUrl: markerIconPng,
+                  iconSize: [25, 41],
+                  iconAnchor: [12, 41],
+                })
+              }
+              position={[data.latitude, data.longtitude]}
+            >
+              <Popup autoPan={true} autoClose={true}>
+                <h1>{data.nama}</h1>
+                <p>{data.deskripsi}</p>
+                <p>{data.lokasi}</p>
+                <Image
+                  width={50}
+                  height={50}
+                  src={`https://5b5c-2404-c0-c206-2f69-400a-f454-6e8d-fcad.ngrok-free.app/api/files/barang/${data.id}/${data.gambar}`}
+                  alt={data.nama}
+                />
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </section>
 
       <section className="flex flex-col gap-12">
         {barang.map((data) => (
